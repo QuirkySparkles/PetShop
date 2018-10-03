@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="import" href="../PetTemplate/PetTemplate.html">
+        <link rel="import" href="../DogTemplate/DogTemplate.html">
+        <link rel="import" href="../CatTemplate/CatTemplate.html">
+        <link rel="import" href="../HamsterTemplate/HamsterTemplate.html">
+    </head>
+    <body>        
+        <template id="pet-shop">
+            <link rel="stylesheet" href="src/PetShop/PetShop.css">
+            
+            <div id="header">Pet Shop</div>
+            <div id="navbar">
+                <div class="all-pets active-tab">All pets</div>
+                <div class="all-cats">All cats</div>
+                <div class="exp-pets">Expensive pets</div>
+                <div class="fluffy-white">Fluffy/white pets</div>
+            </div>
+            <div><button class="open-modal">+</button>Add new pet</div>
+            
+            <div class="add-modal hidden">
+                <div class="modal-content">
+                    <p>New pet</p>
+                    <label for="pet-type" class="select-label">Type</label>
+                    <select class="pet-type">
+                        <option value="cat">Cat</option>
+                        <option value="dog">Dog</option>
+                        <option value="hamster">Hamster</option>
+                    </select>
+                    <br>
+                    <label for="pet-color" class="select-label">Color</label>
+                    <select class="pet-color">
+                        <option value="black">Black</option>
+                        <option value="brown">Brown</option>
+                        <option value="white">White</option>
+                        <option value="cream">Cream</option>
+                        <option value="gray">Gray</option>
+                        <option value="blonde">Blonde</option>
+                        <option value="ashen">Ashen</option>
+                    </select>
+                    <br>
+                    <label>
+                        Price
+                        <input type="number" class="price">
+                    </label>
+                    <label class="name-section">
+                        Name
+                        <input type="text" class="name">
+                    </label>
+                    <label class="fluffy-section">
+                        Fluffy
+                        <input type="checkbox" class="fluffy">
+                    </label>
+                    <br>
+                    <button class="create-pet">Add pet</button>
+                    <button class="cancel">Close</button>
+                    <p id="creation-status"></p>
+                </div>
+            </div>
+            <div id="showcase"></div>
+        </template>
+        
+        <script src="../PetShopView.js"></script>
+        <script src="../allPets.js"></script>
+        <script src="PetShop.js"></script>
+    </body>
+</html>
