@@ -13,12 +13,14 @@ let zooElements = [];
 let totalPrice = 0;
 
 zoo.forEach((pet, i) => {
-    const { _id, color, price } = pet;
+    const _id = pet.getId;
+    const color = pet.getColor;
+    const price = pet.getPrice;
     
     totalPrice += price;
 
     if (pet instanceof Cat) {
-        zooElements.push(new CatTemplate(color, price, pet.name, pet.isFluffy));
+        zooElements.push(new CatTemplate(color, price, pet.name, pet.getFluffy));
     }
 
     if (pet instanceof Dog) {
@@ -26,19 +28,20 @@ zoo.forEach((pet, i) => {
     }
 
     if (pet instanceof Hamster) {
-        zooElements.push(new HamsterTemplate(color, price, pet.isFluffy));
+        zooElements.push(new HamsterTemplate(color, price, pet.getFluffy));
     }
     
     zooElements[i].classList.add(_id);
 });
 
-let petShopView = new PetShopView(zoo, totalPrice);
+let petShop = new PetShop(zoo, totalPrice);
 
-class PetShop extends HTMLElement {
+class PetShopView extends HTMLElement {
     constructor() {
         super();
+        
         this.initialPets = zooElements;
-        this._viewMode = "all";
+        this.viewMode = "all";
     }
     
     connectedCallback() {
@@ -47,7 +50,6 @@ class PetShop extends HTMLElement {
         const shopInstance = shopTemplate.content.cloneNode(true);
         
         shadowRoot.appendChild(shopInstance);
-        petShopView.setAveragePrice();
         
         const modalWindow = this.shadowRoot.querySelector(".add-modal");
         
@@ -63,104 +65,105 @@ class PetShop extends HTMLElement {
         this.initialPets.forEach((pet, i) => {        
             this.shadowRoot.querySelector("#showcase").appendChild(pet);
             
-            this.shadowRoot.querySelector("." + zoo[i]._id).shadowRoot.querySelector("img").addEventListener("click", e => this.deletePet(zoo[i]._id));
+            this.shadowRoot.querySelector("." + zoo[i].getId).shadowRoot.querySelector("img").addEventListener("click", e => this.removePet(zoo[i].getId));
         });
-    }
         
+        petShop.setAveragePrice();
+    }
+    
     addPet() {
         const selectedPet = this.shadowRoot.querySelector(".pet-type").value;
         const color = this.shadowRoot.querySelector(".pet-color").value;
         const price = Number(this.shadowRoot.querySelector(".price").value);
         
         if (!this.validateInput(price, "price")) {
-            petShopView.showMessage("Price is not correct!", this);
+            this.showMessage("Price is not correct!");
             return;
         }
-        
-        petShopView.totalPrice += price;
         
         if (selectedPet === "cat") {
             const isFluffy = this.shadowRoot.querySelector(".fluffy").checked;
             const name = this.shadowRoot.querySelector(".name").value;
             
             if (!this.validateInput(name, "name")) {
-                petShopView.showMessage("Name is not correct!", this);
+                this.showMessage("Name is not correct!");
                 return;
             }
             
-            this._createPet(Cat, CatTemplate, color, price, name, isFluffy);
+            const newPet = petShop.createPet(this.viewMode, Cat, CatTemplate, color, price, name, isFluffy);
+            
+            this.finalizeCreation(newPet);
         }
         
         if (selectedPet === "dog") {
             const name = this.shadowRoot.querySelector(".name").value;
             
             if (!this.validateInput(name, "name")) {
-                petShopView.showMessage("Name is not correct!", this);
+                this.showMessage("Name is not correct!");
                 return;
             }
             
-            this._createPet(Dog, DogTemplate, color, price, name);
+            const newPet = petShop.createPet(this.viewMode, Dog, DogTemplate, color, price, name);
+            
+            this.finalizeCreation(newPet);
         }
         
         if (selectedPet === "hamster") {
             const isFluffy = this.shadowRoot.querySelector(".fluffy").checked;
+            const newPet = petShop.createPet(this.viewMode, Hamster, HamsterTemplate, color, price, isFluffy);
             
-            this._createPet(Hamster, HamsterTemplate, color, price, isFluffy);
+            this.finalizeCreation(newPet);
         }
     }
     
-    _createPet(PetClass, ElementClass, color, price, nameOrFluffy, isFluffy) {
-        let newPet = new PetClass(color, price, nameOrFluffy, isFluffy);
-        let newPetElement = new ElementClass(color, price, nameOrFluffy, isFluffy);
-
-        newPetElement.classList.add(newPet._id);
-
-        petShopView.allPets.push(newPet);
-        petShopView.setAveragePrice();
+    finalizeCreation(newPet) {    
+        this.shadowRoot.querySelector("#showcase").appendChild(newPet);
         
-        if (this._viewMode !== "all") {
-            
-           if (this._shouldHide(newPet)) {
-               newPetElement.classList.add("hidden");
-           }
-        }
+        newPet.shadowRoot.querySelector("img").addEventListener("click", e => this.removePet(newPet.getId));
         
-        this.shadowRoot.querySelector("#showcase").appendChild(newPetElement);
-        
-        const newElement = this.shadowRoot.querySelector("." + newPet._id);
-        newElement.shadowRoot.querySelector("img").addEventListener("click", e => this.deletePet(newPet._id));
-        
-        petShopView.showMessage("Pet has been added!", this);
+        this.showMessage("Pet has been added!");
     }
     
-    _shouldHide(element) {
-        if (this._viewMode === "cats") {
-            return (!(element instanceof Cat));
-        } else if (this._viewMode === "average") {
-            return (petShopView.averagePrice > element.price);
-        } else {
-            return (!element.isFluffy || element.color !== "white")
-        }
+    removePet(petId) {
+        petShop.deletePet(petId);
+        
+        this.shadowRoot.querySelector("#showcase").removeChild(this.shadowRoot.querySelector("." + petId));
     }
-    
+        
     showAll() {
-        this._viewMode = "all";
-        petShopView.renderAllPets(this);
+        this.viewMode = "all";
+        this.renderView();
+        this.shadowRoot.querySelector(".all-pets").classList.add("active-tab");
     }
     
     showCats() {
-        this._viewMode = "cats";
-        petShopView.renderView(this);
+        this.viewMode = "cats";
+        this.renderView();
+        this.shadowRoot.querySelector(".all-cats").classList.add("active-tab");
     }
     
     showAverage() {
-        this._viewMode = "average";
-        petShopView.renderView(this);
+        this.viewMode = "average";
+        this.renderView();
+        this.shadowRoot.querySelector(".exp-pets").classList.add("active-tab");
     }
     
     showFluffyWhite() {    
-        this._viewMode = "fluffy-white";
-        petShopView.renderView(this);
+        this.viewMode = "fluffy-white";
+        this.renderView();
+        this.shadowRoot.querySelector(".fluffy-white").classList.add("active-tab");
+    }
+    
+    renderView() {    
+        const [toShow, toHide] = petShop.filterPets(this.viewMode);
+        const navbarTabs = this.shadowRoot.querySelectorAll("#navbar div");
+        
+        for (let i = 0; i < navbarTabs.length; i++) {
+            navbarTabs[i].classList.remove("active-tab");
+        }
+        
+        toShow.forEach(elementClass => this.shadowRoot.querySelector("." + elementClass).classList.remove("hidden"));
+        toHide.forEach(elementClass => this.shadowRoot.querySelector("." + elementClass).classList.add("hidden"));
     }
     
     openModal(modalWindow) {
@@ -172,7 +175,20 @@ class PetShop extends HTMLElement {
     }
     
     changeModalView(pet) {
-        petShopView.changeModalView(pet, this);
+        const fluffyCheckBox = this.shadowRoot.querySelector(".fluffy-section");
+        const petNameInput = this.shadowRoot.querySelector(".name-section");
+        
+        if (pet === "cat") {
+            fluffyCheckBox.classList.remove("hidden");
+            petNameInput.classList.remove("hidden");
+        } else if (pet === "dog") {
+            fluffyCheckBox.classList.add("hidden");
+            petNameInput.classList.remove("hidden");
+        } else {
+            fluffyCheckBox.classList.remove("hidden");
+            petNameInput.classList.remove("label");
+            petNameInput.classList.add("hidden");
+        }
     }
     
     validateInput(input, type) {        
@@ -183,19 +199,12 @@ class PetShop extends HTMLElement {
         return (input && typeof(input) === "string");
     }
     
-    deletePet(petId) {
-        petShopView.allPets = petShopView.allPets.filter(pet => {
-            
-            if (pet._id === petId) {
-                petShopView.totalPrice -= pet.price;
-                petShopView.setAveragePrice();
-                return false;
-            }
-            return true;
-        });
-        this.shadowRoot.querySelector("#showcase").removeChild(this.shadowRoot.querySelector("." + petId));
+    showMessage(message) {
+        const messageElement = this.shadowRoot.querySelector("#creation-status");
+        
+        messageElement.innerHTML = message;
+        setTimeout( () => messageElement.innerHTML = "", 3000);
     }
-    
 }
 
-customElements.define("pet-shop", PetShop);
+customElements.define("pet-shop", PetShopView);

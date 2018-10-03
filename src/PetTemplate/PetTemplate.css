@@ -15,10 +15,12 @@ p:last-child {
 
 img {
     width: 10px;
+    max-width: 11px;
     position: absolute;
     right: 5px;
 }
 
 img:hover {
     background-color: #e2e2e2;
+    cursor: pointer;
 }
